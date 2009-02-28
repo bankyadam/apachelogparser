@@ -52,13 +52,15 @@ class ApacheLogParser
 		// The contents of Foobar: header line(s) in the reply
 		'\{(?P<name>[a-zA-Z-]+)\}o' => '(?P<respHeader___%NAME%>.+?)',
 		// The canonical Port of the server serving the request
-		'(?P<name>canonical|local|remote)?p' => '(?P<port___%NAME%>\d+)',
+		'p' => '(?P<port___%NAME%>\d+)',
+		'\{(?P<name>canonical|local|remote)\}p' => '(?P<port___%NAME%>\d+)',
 		// The process ID of the child that serviced the request
-		'(?P<name>pid|tid|hextid|hexid)?P' => '(?P<pid___%NAME%>[a-fA-F\d]+)',
+		'P' => '(?P<pid___%NAME%>[a-fA-F\d]+)',
+		'\{(?P<name>pid|tid|hextid|hexid)\}P' => '(?P<pid___%NAME%>[a-fA-F\d]+)',
 		// The query string (prepended with a ? if a query string exists, otherwise an empty string)
 		'q' => '(?P<queryString>.*?)',
 		// First line of request
-		'r' => '(?P<request>(?:GET|POST|HEAD|PUT|DELETE) .+? HTTP/1.(?:0|1))',
+		'r' => '(?P<request>(?:(?:[A-Z]+) .+? HTTP/1.(?:0|1))|-)',
 		// Status.  For requests that got internally redirected, this is
 		// the status of the *original* request --- %>s for the last
 		's' => '(?P<status>\d{3}|-)',
@@ -204,7 +206,7 @@ class ApacheLogParser
 			}
 			$line = $this->parseLine($logLine);
 			if (!empty($line)) {
-				$data[] = $line;
+				//$data[] = $line;
 			}
 			else {
 				echo $logLine;
