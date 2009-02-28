@@ -178,53 +178,13 @@ class ApacheLogParser
 	}
 
 	/**
-	 * Visszaadja a megadott file sorainak ertekeit.
-	 *
-	 * @param string $file   A feldolgozando log file eleresi utvonala.
-	 *
-	 * @throws ApacheLogParserException   Amennyiben a feldolgozas soran hiba keletkezik
-	 * @return array   A feldolgozott log sorok adatait tartalmazo tomb
-	 */
-	public function parse($file)
-	{
-		if (!is_readable($file)) {
-			throw new ApacheLogParserException('A megadott file ['.$file.'] nem olvashato!');
-		}
-
-		$logFilePointer = fopen($file, 'r');
-		if ($logFilePointer === false) {
-			throw new ApacheLogParserException('A megadott file-t ['.$file.'] nem sikerult megnyitni olvasasra!');
-		}
-
-		$currentLine = 0;
-		$data = array();
-		while (!feof($logFilePointer)) {
-			$currentLine++;
-			$logLine = fgets($logFilePointer);
-			if (empty($logLine)) {
-				continue;
-			}
-			$line = $this->parseLine($logLine);
-			if (!empty($line)) {
-				//$data[] = $line;
-			}
-			else {
-				echo $logLine;
-				trigger_error('A '.$currentLine.'. sor nem ertelmezheto.', E_USER_NOTICE);
-			}
-		}
-		fclose($logFilePointer);
-		return $data;
-	}
-
-	/**
 	 * Visszaadja a megadott log sor ertekeit.
 	 *
 	 * @param string $line   A feldolgozando log sor.
 	 *
 	 * @return array   A feldolgozott log sor adatait tartalmazo asszociativ tomb.
 	 */
-	public function parseLine($line)
+	public function parse($line)
 	{
 		$match = array();
 		preg_match($this->parserExpression, trim($line), $match);
