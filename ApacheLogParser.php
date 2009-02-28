@@ -11,9 +11,9 @@ class ApacheLogParser
 {
 	/**
 	 * @var array   Apache log elemek regularis kifejezesei. (Apache 2.2 kompatibilis)
-	 * 
+	 *
 	 * @link http://httpd.apache.org/docs/2.2/mod/mod_log_config.html#formats
-	 * 
+	 *
 	 * NOTE: Az ertekekben levo regularis kifejezesekben talalhato '#' karaktereket escape-elni kell!
 	 */
 	private static $pattern = array(
@@ -61,9 +61,9 @@ class ApacheLogParser
 		'r' => '(?P<request>(?:GET|POST|HEAD|PUT|DELETE) .+? HTTP/1.(?:0|1))',
 		// Status.  For requests that got internally redirected, this is
 		// the status of the *original* request --- %>s for the last
-		's' => '(?P<status>\d{3})',
+		's' => '(?P<status>\d{3}|-)',
 		// Time, in common log format time format (standard english format)
-		't' => '\[(?P<time>\d{2}/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/\d{4}:\d{2}:\d{2}:\d{2} -?\d{4})\]',
+		't' => '\[(?P<time>\d{2}/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/\d{4}:\d{2}:\d{2}:\d{2} (?:-|\+)\d{4})\]',
 		// The time, in the form given by format, which should be in strftime(3) format (potentially localized)
 		'\{(?P<name>.+?)\}t' => '(?P<locTime___%NAME%>.+?)',
 		// The time taken to serve the request, in seconds
@@ -86,7 +86,7 @@ class ApacheLogParser
 		// Bytes sent, including headers, cannot be zero
 		'O' => '(?P<sentBytes>\d+)',
 	);
-	
+
 	/**
 	 * @var string   A log sorainak formatumat tartalmazza.
 	 */
@@ -96,12 +96,12 @@ class ApacheLogParser
 	 * @var string   A feldolgozaskor hasznalt regularis kifejezes.
 	 */
 	private $parserExpression = '';
-	
+
 	/**
 	 * Konstruktor
-	 * 
+	 *
 	 * @param string   A log sorainak formatuma
-	 * 
+	 *
 	 * @return void
 	 */
 	public function __construct($format)
@@ -112,7 +112,7 @@ class ApacheLogParser
 
 	/**
 	 * Osszeallitja a megadott formatum alapjan a feldolgozashoz szukseges regularis kifejezest.
-	 * 
+	 *
 	 * @return void
 	 */
 	private function buildParserExpression()
@@ -171,15 +171,15 @@ class ApacheLogParser
 					}
 			}
 		}
-		
+
 		$this->parserExpression .= '$#';
 	}
-	
+
 	/**
 	 * Visszaadja a megadott file sorainak ertekeit.
-	 * 
+	 *
 	 * @param string $file   A feldolgozando log file eleresi utvonala.
-	 * 
+	 *
 	 * @throws ApacheLogParserException   Amennyiben a feldolgozas soran hiba keletkezik
 	 * @return array   A feldolgozott log sorok adatait tartalmazo tomb
 	 */
@@ -188,13 +188,38 @@ class ApacheLogParser
 		if (!is_readable($file)) {
 			throw new ApacheLogParserException('A megadott file ['.$file.'] nem olvashato!');
 		}
+
+		$logFilePointer = fopen($file, 'r');
+		if ($logFilePointer === false) {
+			throw new ApacheLogParserException('A megadott file-t ['.$file.'] nem sikerult megnyitni olvasasra!');
+		}
+
+		$currentLine = 0;
+		$data = array();
+		while (!feof($logFilePointer)) {
+			$currentLine++;
+			$logLine = fgets($logFilePointer);
+			if (empty($logLine)) {
+				continue;
+			}
+			$line = $this->parseLine($logLine);
+			if (!empty($line)) {
+				$data[] = $line;
+			}
+			else {
+				echo $logLine;
+				trigger_error('A '.$currentLine.'. sor nem ertelmezheto.', E_USER_NOTICE);
+			}
+		}
+		fclose($logFilePointer);
+		return $data;
 	}
 
 	/**
 	 * Visszaadja a megadott log sor ertekeit.
-	 * 
+	 *
 	 * @param string $line   A feldolgozando log sor.
-	 * 
+	 *
 	 * @return array   A feldolgozott log sor adatait tartalmazo asszociativ tomb.
 	 */
 	public function parseLine($line)
@@ -207,7 +232,7 @@ class ApacheLogParser
 
 /**
  * Apache Log Parser Exception
- * 
+ *
  * @package ApacheLogParser
  */
 class ApacheLogParserException extends Exception
